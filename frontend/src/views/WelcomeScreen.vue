@@ -48,6 +48,11 @@ const confirmStart = async () => {
 };
 
 const handleNext = () => router.push({ name: "WaitingPhoto" });
+
+const onConfirmYes = async () => {
+  await confirmStart();
+  handleNext();
+};
 </script>
 <template>
   <button @click="openModal">open modal</button>
@@ -56,7 +61,7 @@ const handleNext = () => router.push({ name: "WaitingPhoto" });
       <h2>Mulai Foto</h2>
       <div class="actions">
         <button @click="closeModal">Batal</button>
-        <button @click="confirmStart">Ya</button>
+        <button @click="onConfirmYes">Ya</button>
       </div>
     </div>
   </div>
