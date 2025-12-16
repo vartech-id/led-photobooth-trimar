@@ -167,7 +167,6 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* background: radial-gradient(circle at center, rgba(255, 0, 43, 0.18), rgba(0, 0, 0, 0.9)); */
   color: #fff;
   text-align: center;
   padding: 2rem;
@@ -254,24 +253,6 @@ h1 {
   background: white;
   transform: translate(0px, 20px);
 }
-
-/* .action-btn.primary {
-  background: #ff002b;
-  color: #fff;
-  box-shadow: 0 16px 32px rgba(255, 0, 43, 0.35);
-} */
-
-/* .action-btn.secondary {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-} */
-
-/* .action-btn:hover,
-.action-btn:focus-visible {
-  transform: translateY(-2px);
-  outline: none;
-} */
 
 .action-btn:active {
   transform: translateY(0);

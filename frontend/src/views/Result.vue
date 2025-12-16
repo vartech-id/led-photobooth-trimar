@@ -1,164 +1,175 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
-const router = useRouter()
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
+const router = useRouter();
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
-const status = ref('checking')
-const assetPath = ref('')
-const assetUrl = ref('')
-const shareUrl = ref('')
-const completedAt = ref('')
-const errorMessage = ref('')
-const isRestarting = ref(false)
-const isQrModalOpen = ref(false)
+const status = ref("checking");
+const assetPath = ref("");
+const assetUrl = ref("");
+const shareUrl = ref("");
+const completedAt = ref("");
+const errorMessage = ref("");
+const isRestarting = ref(false);
+const isQrModalOpen = ref(false);
 
 // Timer for periodic updates
-let updateTimer = null
-const UPDATE_INTERVAL = 5000 // 5 seconds
+let updateTimer = null;
+const UPDATE_INTERVAL = 5000; // 5 seconds
 
-const hasAsset = computed(() => Boolean(assetUrl.value || assetPath.value))
-const hasShareLink = computed(() => Boolean(shareUrl.value))
+const hasAsset = computed(() => Boolean(assetUrl.value || assetPath.value));
+const hasShareLink = computed(() => Boolean(shareUrl.value));
 
-const assetHint = computed(() => (!assetUrl.value ? assetPath.value : ''))
+const assetHint = computed(() => (!assetUrl.value ? assetPath.value : ""));
 const qrImageSrc = computed(() =>
-  shareUrl.value ? `https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(shareUrl.value)}` : ''
-)
+  shareUrl.value
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(
+        shareUrl.value
+      )}`
+    : ""
+);
 
 // Clear any existing timer
 const clearUpdateTimer = () => {
   if (updateTimer) {
-    clearTimeout(updateTimer)
-    updateTimer = null
+    clearTimeout(updateTimer);
+    updateTimer = null;
   }
-}
+};
 
 const fetchLatestState = async () => {
   try {
-    const response = await fetch(`${apiBaseUrl}/session/status`, { cache: 'no-store' })
+    const response = await fetch(`${apiBaseUrl}/session/status`, {
+      cache: "no-store",
+    });
     if (!response.ok) {
-      throw new Error(`Status request failed with ${response.status}`)
+      throw new Error(`Status request failed with ${response.status}`);
     }
 
-    const payload = await response.json()
-    const state = payload?.state ?? {}
-    status.value = state?.status ?? 'idle'
-    assetPath.value = state?.asset_path ?? ''
-    shareUrl.value = state?.share_url ?? ''
+    const payload = await response.json();
+    const state = payload?.state ?? {};
+    status.value = state?.status ?? "idle";
+    assetPath.value = state?.asset_path ?? "";
+    shareUrl.value = state?.share_url ?? "";
 
-    const rawAssetUrl = state?.asset_url ?? ''
+    const rawAssetUrl = state?.asset_url ?? "";
     if (rawAssetUrl) {
       try {
-        assetUrl.value = new URL(rawAssetUrl, apiBaseUrl).href
+        assetUrl.value = new URL(rawAssetUrl, apiBaseUrl).href;
       } catch (error) {
-        console.error('Failed to resolve asset URL', error)
-        assetUrl.value = rawAssetUrl
+        console.error("Failed to resolve asset URL", error);
+        assetUrl.value = rawAssetUrl;
       }
     } else {
-      assetUrl.value = ''
+      assetUrl.value = "";
     }
-    completedAt.value = state?.completed_at ?? ''
-    errorMessage.value = ''
+    completedAt.value = state?.completed_at ?? "";
+    errorMessage.value = "";
 
-    if (status.value === 'completed') {
+    if (status.value === "completed") {
       // Stop polling when completed
-      clearUpdateTimer()
-      return
+      clearUpdateTimer();
+      return;
     }
 
-    if (status.value === 'in_progress') {
-      router.replace({ name: 'photo-session' })
+    if (status.value === "in_progress") {
+      router.replace({ name: "photo-session" });
     } else {
-      router.replace({ name: 'home' })
+      router.replace({ name: "home" });
     }
   } catch (error) {
-    console.error(error)
-    errorMessage.value = 'Unable to load the photo session result.'
-    
+    console.error(error);
+    errorMessage.value = "Unable to load the photo session result.";
+
     // Stop polling on error
-    clearUpdateTimer()
+    clearUpdateTimer();
   }
-}
+};
 
 // Schedule next update
 const scheduleNextUpdate = () => {
-  clearUpdateTimer()
+  clearUpdateTimer();
   updateTimer = setTimeout(() => {
-    fetchLatestState()
-  }, UPDATE_INTERVAL)
-}
-
-const goHome = () => {
-  isQrModalOpen.value = false
-  router.replace({ name: 'WelcomeScreen' })
-}
+    fetchLatestState();
+  }, UPDATE_INTERVAL);
+};
 
 const retakeSession = async () => {
-  if (isRestarting.value) return
-  isRestarting.value = true
-  errorMessage.value = ''
+  if (isRestarting.value) return;
+  isRestarting.value = true;
+  errorMessage.value = "";
   try {
-    const resetResponse = await fetch(`${apiBaseUrl}/session/reset`, { method: 'POST' })
+    const resetResponse = await fetch(`${apiBaseUrl}/session/reset`, {
+      method: "POST",
+    });
     if (!resetResponse.ok) {
-      throw new Error('Failed to reset the session.')
+      throw new Error("Failed to reset the session.");
     }
 
-    const startResponse = await fetch(`${apiBaseUrl}/session/start`, { method: 'POST' })
+    const startResponse = await fetch(`${apiBaseUrl}/session/start`, {
+      method: "POST",
+    });
     if (!startResponse.ok) {
-      const payload = await startResponse.json().catch(() => ({}))
-      throw new Error(payload?.message || 'Failed to start a new session.')
+      const payload = await startResponse.json().catch(() => ({}));
+      throw new Error(payload?.message || "Failed to start a new session.");
     }
-    shareUrl.value = ''
-    isQrModalOpen.value = false
-    router.replace({ name: 'photo-session' })
+    shareUrl.value = "";
+    isQrModalOpen.value = false;
+    router.replace({ name: "photo-session" });
   } catch (error) {
-    console.error(error)
+    console.error(error);
     errorMessage.value =
       error instanceof Error && error.message
         ? error.message
-        : 'Unable to restart the photo booth.'
+        : "Unable to restart the photo booth.";
   } finally {
-    isRestarting.value = false
+    isRestarting.value = false;
   }
-}
+};
 
 const openQrModal = () => {
-  if (!hasShareLink.value) return
-  isQrModalOpen.value = true
-}
+  if (!hasShareLink.value) return;
+  isQrModalOpen.value = true;
+};
 
 const closeQrModal = () => {
-  isQrModalOpen.value = false
+  isQrModalOpen.value = false;
+};
+
+const handleNext = () => {
+  router.push({ name : 'LaunchPhoto'})
 }
 
 onMounted(() => {
-  fetchLatestState()
+  fetchLatestState();
   // Start periodic updates
-  scheduleNextUpdate()
-})
+  scheduleNextUpdate();
+});
 
 onBeforeUnmount(() => {
   // Clean up timer when component is destroyed
-  clearUpdateTimer()
-})
+  clearUpdateTimer();
+});
 </script>
 
 <template>
   <main class="result-screen">
     <section class="preview-card">
       <div class="image-frame" :class="{ empty: !assetUrl }">
-                  <img
-                    v-if="assetUrl"
-                    :src="assetUrl"
-                    alt="Latest photo booth capture"
-                    class="result-image"
-                    @click="goHome"
-                  />        <div v-else class="placeholder">
+        <img
+          v-if="assetUrl"
+          :src="assetUrl"
+          alt="Latest photo booth capture"
+          class="result-image"
+        />
+        <div v-else class="placeholder">
           <h1 v-if="hasAsset">Photo ready!</h1>
           <h1 v-else>Awaiting final image...</h1>
           <p v-if="assetHint">Saved at: {{ assetHint }}</p>
-          <p v-else>Once DSLRBooth exports the photo we will show a preview here.</p>
+          <p v-else>
+            Once DSLRBooth exports the photo we will show a preview here.
+          </p>
         </div>
       </div>
       <!-- <p v-if="completedAt" class="timestamp">Captured at {{ completedAt }}</p> -->
@@ -185,7 +196,6 @@ onBeforeUnmount(() => {
       </button>
     </section>
 
-
     <teleport to="body">
       <div
         v-if="isQrModalOpen"
@@ -194,7 +204,14 @@ onBeforeUnmount(() => {
         @click="closeQrModal"
       >
         <div class="qr-modal" role="dialog" aria-modal="true" @click.stop>
-          <h2>Download via <br> QR code</h2>
+          <div class="modal-title-action">
+            <h2>
+              Download via
+              <br />
+              QR code
+            </h2>
+            <button @click="closeQrModal">X</button>
+          </div>
           <div class="qr-wrapper">
             <div class="border-box-qr">
               <img
@@ -207,8 +224,12 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <!-- <p v-if="shareUrl" class="share-link">{{ shareUrl }}</p> -->
-          <button type="button" class="qr-close merah-semua" @click="closeQrModal">
-            Selesai
+          <button
+            type="button"
+            class="qr-close merah-semua"
+            @click="handleNext"
+          >
+            Next
           </button>
         </div>
       </div>
@@ -295,18 +316,17 @@ onBeforeUnmount(() => {
 }
 
 .cetak-caption {
-font-family: "Poppins", sans-serif;
-font-weight: 700;
-font-style: normal;
-font-size: 72px;
-line-height: 100%;
-letter-spacing: 0%;
-text-align: center;
-position: relative;
-color: #E60000;
-margin:0px;
-top: 80px;
-
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  font-size: 72px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  text-align: center;
+  position: relative;
+  color: #e60000;
+  margin: 0px;
+  top: 80px;
 }
 
 .actions {
@@ -315,26 +335,24 @@ top: 80px;
   transform: translate(0px, 90px);
 }
 
-
-.retake-btn{
-    border-radius: 60px;
-    font-size: 60px;
-    width: 334px;
-    height: 130px; 
-    background: #ffff;
-    color: #E60000;
-    border: 5px solid #E60000;
+.retake-btn {
+  border-radius: 60px;
+  font-size: 60px;
+  width: 334px;
+  height: 130px;
+  background: #ffff;
+  color: #e60000;
+  border: 5px solid #e60000;
 }
 
 .downloads-btn {
-    border-radius: 60px;
-    font-size: 60px;
-    width: 549px;
-    height: 130px;
-    border: none;
-    background: #E60000;
-    color: #fff;
-
+  border-radius: 60px;
+  font-size: 60px;
+  width: 549px;
+  height: 130px;
+  border: none;
+  background: #e60000;
+  color: #fff;
 }
 
 .home-btn {
@@ -362,7 +380,7 @@ top: 80px;
 }
 
 .qr-modal {
-  background: #FFFFFF;
+  background: #ffffff;
   border-radius: 32px;
   padding: 100px 100px 100px;
   width: min(800px, 90vw);
@@ -380,7 +398,7 @@ top: 80px;
   font-weight: 700;
   font-family: "Poppins", sans-serif;
   font-style: normal;
-  color: #E60000;
+  color: #e60000;
 }
 
 .qr-wrapper {
@@ -392,10 +410,9 @@ top: 80px;
   padding: 1.5rem;
 }
 
-.border-box-qr{
+.border-box-qr {
   border: 2px solid #000000;
   padding: 20px;
-
 }
 
 .qr-image {
