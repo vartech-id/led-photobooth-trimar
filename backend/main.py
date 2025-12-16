@@ -3,12 +3,15 @@ from pathlib import Path
 from threading import Lock
 from uuid import uuid4
 from urllib.parse import unquote
+import shutil
 
 import subprocess
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 app = FastAPI()
 
@@ -21,6 +24,17 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).resolve().parent
 SCRIPTS_DIR = BASE_DIR / "scripts"
+STATIC_DIR = BASE_DIR / "static"
+PHOTOS_DIR = STATIC_DIR / "photos"
+DISPLAY_DIRS = {slot: PHOTOS_DIR / f"Display{slot}" for slot in (1, 2, 3)}
+
+# Pastikan folder statis/slot selalu ada
+STATIC_DIR.mkdir(exist_ok=True)
+PHOTOS_DIR.mkdir(exist_ok=True)
+for _slot_dir in DISPLAY_DIRS.values():
+    _slot_dir.mkdir(parents=True, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Event yang ingin ditangani (supaya log tetap bersih)
 WHITELIST = {"printing", "file_upload", "session_start", "session_end", "error"}
@@ -39,6 +53,13 @@ SESSION_STATE: dict[str, str | None] = {
     "asset_token": None,
     "share_url": None,
     "error": None,
+}
+
+RING_LOCK = Lock()
+RING_COUNTER = 0
+SLOT_STATE: dict[int, dict[str, str | int | None]] = {
+    slot: {"photo_url": None, "photo_id": None, "version": 0, "updated_at": None}
+    for slot in (1, 2, 3)
 }
 
 def decode_params(qs: dict) -> dict:
@@ -86,6 +107,84 @@ def schedule_script(script_name: str, background: BackgroundTasks) -> None:
     cmd = build_script_cmd(script_name)
     if cmd:
         background.add_task(run_action, cmd)
+
+
+class NewPhotoPayload(BaseModel):
+    asset_path: str | None = Field(default=None, alias="assetPath")
+    slot: int | None = None
+
+
+def _select_slot() -> int:
+    global RING_COUNTER
+    return (RING_COUNTER % 3) + 1
+
+
+def _copy_to_slot(source: Path, slot: int) -> dict:
+    """
+    Copy file ke folder slot dengan rename atomik.
+    """
+    slot_dir = DISPLAY_DIRS[slot]
+    suffix = source.suffix or ".jpg"
+    dest_name = f"foto-{slot}{suffix}"
+    dest_path = slot_dir / dest_name
+    tmp_path = slot_dir / f".tmp-{uuid4().hex}{suffix}"
+
+    try:
+        shutil.copy2(source, tmp_path)
+        tmp_path.replace(dest_path)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to copy photo: {exc}") from exc
+    finally:
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    version = (SLOT_STATE[slot]["version"] or 0) + 1
+    SLOT_STATE[slot].update(
+        photo_url=f"/static/photos/Display{slot}/{dest_name}",
+        photo_id=dest_name,
+        version=version,
+        updated_at=datetime.now().isoformat(),
+    )
+    return {
+        "slot": slot,
+        "photoUrl": SLOT_STATE[slot]["photo_url"],
+        "photoId": SLOT_STATE[slot]["photo_id"],
+        "version": version,
+    }
+
+
+def _handle_new_photo(source_path: Path, target_slot: int | None = None) -> dict:
+    """
+    Tentukan slot, copy file, update state ring buffer.
+    """
+    global RING_COUNTER
+    if not source_path.is_file():
+        raise HTTPException(status_code=404, detail="Source photo not found or unreadable.")
+
+    with RING_LOCK:
+        slot = target_slot or _select_slot()
+        result = _copy_to_slot(source_path, slot)
+        RING_COUNTER += 1
+        return result
+
+
+def _build_slot_state(slot: int) -> dict:
+    state = dict(SLOT_STATE[slot])
+    state["slot"] = slot
+    # Berikan kunci camelCase juga supaya frontend fleksibel
+    return {
+        "slot": slot,
+        "photoUrl": state.get("photo_url"),
+        "photoId": state.get("photo_id"),
+        "version": state.get("version") or 0,
+        "updatedAt": state.get("updated_at"),
+        "photo_url": state.get("photo_url"),
+        "photo_id": state.get("photo_id"),
+        "updated_at": state.get("updated_at"),
+    }
 
 
 @app.post("/session/start")
@@ -189,6 +288,47 @@ async def session_asset(token: str | None = None):
         filename=path.name,
         media_type="image/jpeg",
     )
+
+
+@app.get("/api/slot/{slot_id}")
+async def slot_state(slot_id: int):
+    if slot_id not in SLOT_STATE:
+        raise HTTPException(status_code=404, detail="Unknown slot.")
+    with RING_LOCK:
+        state = _build_slot_state(slot_id)
+    return {"ok": True, "state": state}
+
+
+@app.post("/api/photos/new")
+async def new_photo(payload: NewPhotoPayload):
+    """
+    Simpan foto baru ke ring buffer 3-slot.
+    Prioritas sumber:
+    - asset_path di payload
+    - fallback ke SESSION_STATE.asset_path (hasil sesi terakhir)
+    """
+    candidate = payload.asset_path or get_session_state().get("asset_path")
+    if not candidate:
+        raise HTTPException(
+            status_code=400, detail="asset_path is required or no session asset found."
+        )
+
+    try:
+        source_path = Path(candidate).expanduser().resolve()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid asset_path: {exc}") from exc
+
+    target_slot = payload.slot
+    if target_slot and target_slot not in (1, 2, 3):
+        raise HTTPException(status_code=400, detail="slot must be 1, 2, or 3.")
+
+    result = _handle_new_photo(source_path, target_slot=target_slot)
+    return {
+        "ok": True,
+        "assignedSlot": result["slot"],
+        "photoUrl": result["photoUrl"],
+        "version": result["version"],
+    }
 
 
 @app.get("/hook")

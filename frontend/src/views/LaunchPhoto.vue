@@ -1,203 +1,141 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const router = useRouter();
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const router = useRouter()
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
 
-const status = ref("checking");
-const assetPath = ref("");
-const assetUrl = ref("");
-const shareUrl = ref("");
-const completedAt = ref("");
-const errorMessage = ref("");
+const status = ref('checking')
+const assetPath = ref('')
+const assetUrl = ref('')
+const errorMessage = ref('')
 
-// Timer for periodic updates
-let updateTimer = null;
-const UPDATE_INTERVAL = 5000; // 5 seconds
+const isLaunching = ref(false)
+const launchMessage = ref('')
+const launchError = ref('')
 
-const hasAsset = computed(() => Boolean(assetUrl.value || assetPath.value));
+let pollHandle = null
+const UPDATE_INTERVAL = 5000
 
-const assetHint = computed(() => (!assetUrl.value ? assetPath.value : ""));
-
-// Clear any existing timer
-const clearUpdateTimer = () => {
-  if (updateTimer) {
-    clearTimeout(updateTimer);
-    updateTimer = null;
+const clearPolling = () => {
+  if (pollHandle) {
+    clearInterval(pollHandle)
+    pollHandle = null
   }
-};
+}
 
 const fetchLatestState = async () => {
   try {
-    const response = await fetch(`${apiBaseUrl}/session/status`, {
-      cache: "no-store",
-    });
+    const response = await fetch(`${apiBaseUrl}/session/status`, { cache: 'no-store' })
+    const payload = await response.json().catch(() => ({}))
     if (!response.ok) {
-      throw new Error(`Status request failed with ${response.status}`);
+      const message = payload?.detail || `Status request failed with ${response.status}`
+      throw new Error(message)
     }
 
-    const payload = await response.json();
-    const state = payload?.state ?? {};
-    status.value = state?.status ?? "idle";
-    assetPath.value = state?.asset_path ?? "";
-    shareUrl.value = state?.share_url ?? "";
+    const state = payload?.state ?? {}
+    status.value = state?.status ?? 'idle'
+    assetPath.value = state?.asset_path ?? ''
 
-    const rawAssetUrl = state?.asset_url ?? "";
+    const rawAssetUrl = state?.asset_url ?? ''
     if (rawAssetUrl) {
       try {
-        assetUrl.value = new URL(rawAssetUrl, apiBaseUrl).href;
+        assetUrl.value = new URL(rawAssetUrl, apiBaseUrl).href
       } catch (error) {
-        console.error("Failed to resolve asset URL", error);
-        assetUrl.value = rawAssetUrl;
+        assetUrl.value = rawAssetUrl
       }
     } else {
-      assetUrl.value = "";
-    }
-    completedAt.value = state?.completed_at ?? "";
-    errorMessage.value = "";
-
-    if (status.value === "completed") {
-      // Stop polling when completed
-      clearUpdateTimer();
-      return;
+      assetUrl.value = ''
     }
 
-    if (status.value === "in_progress") {
-      router.replace({ name: "photo-session" });
-    } else {
-      router.replace({ name: "home" });
-    }
+    errorMessage.value = ''
   } catch (error) {
-    console.error(error);
-    errorMessage.value = "Unable to load the photo session result.";
-
-    // Stop polling on error
-    clearUpdateTimer();
+    errorMessage.value = error instanceof Error ? error.message : 'Unable to load session status.'
   }
-};
+}
 
-// Schedule next update
-const scheduleNextUpdate = () => {
-  clearUpdateTimer();
-  updateTimer = setTimeout(() => {
-    fetchLatestState();
-  }, UPDATE_INTERVAL);
-};
+const startPolling = () => {
+  if (!pollHandle) {
+    pollHandle = setInterval(fetchLatestState, UPDATE_INTERVAL)
+  }
+}
 
 const handleHome = () => {
-  router.push({ name: "WelcomeScreen" });
-};
+  router.push({ name: 'WelcomeScreen' })
+}
 
-const handleLaunch = () => {};
+const handleLaunch = async () => {
+  if (isLaunching.value) return
+  launchError.value = ''
+  launchMessage.value = ''
 
-const handleFinish = () => {
-  handleLaunch();
-  handleHome();
-};
+  const body = {
+    asset_path: assetPath.value || null,
+  }
+
+  if (!body.asset_path) {
+    launchError.value = 'Photo is not ready to send.'
+    return
+  }
+
+  isLaunching.value = true
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/photos/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const message = payload?.detail || `Failed to send photo (${response.status})`
+      throw new Error(message)
+    }
+
+    const slot = payload?.assignedSlot ?? payload?.slot
+    const version = payload?.version
+    const slotCopy = slot ? `slot ${slot}` : 'LED display'
+    const versionCopy = version ? ` (v${version})` : ''
+    launchMessage.value = `Photo sent to ${slotCopy}${versionCopy}.`
+  } catch (error) {
+    launchError.value = error instanceof Error ? error.message : 'Failed to send photo.'
+  } finally {
+    isLaunching.value = false
+  }
+}
+
+const handleFinish = async () => {
+  await handleLaunch()
+  if (!launchError.value) {
+    handleHome()
+  }
+}
 
 onMounted(() => {
-  fetchLatestState();
-  // Start periodic updates
-  scheduleNextUpdate();
-});
+  fetchLatestState()
+  startPolling()
+})
 
 onBeforeUnmount(() => {
-  // Clean up timer when component is destroyed
-  clearUpdateTimer();
-});
+  clearPolling()
+})
 </script>
 
 <template>
-  <main class="result-screen">
-    <section class="preview-card">
-      <div class="image-frame" :class="{ empty: !assetUrl }">
-        <img
-          v-if="assetUrl"
-          :src="assetUrl"
-          alt="Latest photo booth capture"
-          class="result-image"
-        />
-        <div v-else class="placeholder">
-          <h1 v-if="hasAsset">Photo ready!</h1>
-          <h1 v-else>Awaiting final image...</h1>
-          <p v-if="assetHint">Saved at: {{ assetHint }}</p>
-          <p v-else>
-            Once DSLRBooth exports the photo we will show a preview here.
-          </p>
-        </div>
-      </div>
+  <main>
+    <section>
+      <p>Status sesi: {{ status }}</p>
+      <p v-if="errorMessage">Error: {{ errorMessage }}</p>
+      <p v-if="assetPath">File: {{ assetPath }}</p>
+      <img v-if="assetUrl" :src="assetUrl" alt="Preview foto" />
     </section>
 
-    <section class="actions">
-      <button class="launch-btn" @click="handleFinish">
-        Luncurkan Foto ke LED
+    <section>
+      <button type="button" :disabled="isLaunching" @click="handleFinish">
+        {{ isLaunching ? 'Mengirim...' : 'Luncurkan Foto ke LED' }}
       </button>
+      <p v-if="launchMessage">{{ launchMessage }}</p>
+      <p v-if="launchError">Error: {{ launchError }}</p>
     </section>
   </main>
 </template>
-
-<style scoped>
-.result-screen {
-  width: 100vw;
-  height: 100vh;
-  padding: clamp(2rem, 4vw, 3rem);
-  /* background: radial-gradient(circle at center, rgba(0, 180, 255, 0.18), rgba(0, 0, 0, 0.92)); */
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(2rem, 5vw, 3rem);
-  text-align: center;
-  transform: translate(0px, -30px);
-}
-
-.preview-card {
-  max-width: 960px;
-  width: 100%;
-  border-radius: 36px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.image-frame {
-  width: min(100%, 900px);
-  aspect-ratio: 3 / 4;
-  border-radius: 28px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.result-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-.timestamp {
-  margin: 0;
-  font-size: clamp(1rem, 2vw, 1.4rem);
-  opacity: 0.7;
-}
-
-.actions {
-  display: flex;
-  gap: 40px;
-  transform: translate(0px, 90px);
-}
-
-.launch-btn {
-  border-radius: 60px;
-  font-size: 50px;
-  width: 549px;
-  height: 130px;
-  border: none;
-  background: #e60000;
-  color: #fff;
-}
-</style>
