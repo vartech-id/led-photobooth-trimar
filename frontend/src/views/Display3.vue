@@ -8,7 +8,7 @@ const version = ref(0)
 const status = ref('loading') // loading | waiting | ready | error
 const errorMessage = ref('')
 
-const POLL_INTERVAL_MS = 1000
+const POLL_INTERVAL_MS = 2000
 let pollHandle = null
 
 const resolveUrl = (path, ver) => {
@@ -98,11 +98,18 @@ onBeforeUnmount(() => {
 
 <template>
   <main>
-    <h1>Display {{ slotNumber }}</h1>
-    <p v-if="status === 'loading'">Loading slot...</p>
-    <p v-else-if="status === 'error'">{{ errorMessage }}</p>
-    <p v-else-if="!photoUrl">Waiting for photo...</p>
-    <img v-else :src="photoUrl" :alt="`Slot ${slotNumber} photo`" />
-    <p>Version: {{ version }}</p>
+    <div class="display-frame">
+      <h1 class="led-number">Display {{ slotNumber }}</h1>
+      <p v-if="status === 'loading'">Loading slot...</p>
+      <p v-else-if="status === 'error'">{{ errorMessage }}</p>
+      <p v-else-if="!photoUrl">Waiting for photo...</p>
+      <img
+        class="led-image"
+        v-else
+        :src="photoUrl"
+        :alt="`Slot ${slotNumber} photo`"
+      />
+      <p>Version: {{ version }}</p>
+    </div>
   </main>
 </template>
