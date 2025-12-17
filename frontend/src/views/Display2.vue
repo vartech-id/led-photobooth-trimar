@@ -7,6 +7,7 @@ const photoUrl = ref("");
 const version = ref(0);
 const status = ref("loading"); // loading | waiting | ready | error
 const errorMessage = ref("");
+const isFallback = ref(false);
 
 const POLL_INTERVAL_MS = 2000;
 let pollHandle = null;
@@ -32,6 +33,29 @@ const preloadImage = (url) =>
     img.src = url;
   });
 
+const tryStaticFallback = async () => {
+  if (photoUrl.value) return;
+  const exts = [".jpg", ".jpeg", ".png", ".webp"];
+  const prefixes = ["/static/photos", "/photos"];
+  for (const prefix of prefixes) {
+    for (const ext of exts) {
+      const candidate = resolveUrl(
+        `${prefix}/Display${slotNumber}/foto-${slotNumber}${ext}`
+      );
+      const loaded = await preloadImage(candidate)
+        .then(() => true)
+        .catch(() => false);
+      if (loaded) {
+        photoUrl.value = candidate;
+        version.value = 0;
+        isFallback.value = true;
+        status.value = "waiting";
+        return;
+      }
+    }
+  }
+};
+
 const fetchSlotState = async () => {
   try {
     const response = await fetch(`${apiBaseUrl}/api/slot/${slotNumber}`, {
@@ -50,6 +74,7 @@ const fetchSlotState = async () => {
 
     if (!baseUrl) {
       status.value = "waiting";
+      await tryStaticFallback();
       return;
     }
 
@@ -70,6 +95,7 @@ const fetchSlotState = async () => {
 
     photoUrl.value = nextUrl;
     version.value = incomingVersion;
+    isFallback.value = false;
     status.value = "ready";
     errorMessage.value = "";
   } catch (error) {
@@ -93,6 +119,7 @@ const stopPolling = () => {
 };
 
 onMounted(() => {
+  tryStaticFallback();
   fetchSlotState();
   startPolling();
 });
@@ -108,10 +135,13 @@ onBeforeUnmount(() => {
       <h1 class="led-number">Display {{ slotNumber }}</h1>
       <p v-if="status === 'loading'">Loading slot...</p>
       <p v-else-if="status === 'error'">{{ errorMessage }}</p>
+      <p v-if="status === 'waiting' && isFallback">
+        Waiting for photo, this is fallback.
+      </p>
       <p v-else-if="!photoUrl">Waiting for photo...</p>
       <img
         class="led-image"
-        v-else
+        v-if="photoUrl"
         :src="photoUrl"
         :alt="`Slot ${slotNumber} photo`"
       />
