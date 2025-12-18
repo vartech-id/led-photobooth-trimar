@@ -56,7 +56,7 @@ const onConfirmYes = async () => {
 </script>
 <template>
   <div class="page one">
-    <button class="start-button" @click="openModal">Start Button</button>
+    <img src="../assets/start-btn.png" alt="start button" class="start-button" @click="openModal">Start Button</img>
     <div v-if="isModalOpen" class="overlay">
       <div class="modal">
         <h2>Mulai Foto</h2>
@@ -77,10 +77,27 @@ const onConfirmYes = async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: url(../assets/bg-1.png);
 }
 
-.start-button {
-  font-size: 100px;
+.start-button{
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+
+  transform-origin: center;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse{
+  0%, 100% { transform: scale(1);    filter: brightness(1); }
+  50%      { transform: scale(1.06); filter: brightness(1.08); }
+}
+
+.start-button:active{
+  animation: none;
+  transform: scale(0.95);
+  filter: brightness(0.92);
 }
 
 .overlay {
