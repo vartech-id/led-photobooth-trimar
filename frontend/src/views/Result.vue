@@ -138,8 +138,8 @@ const closeQrModal = () => {
 };
 
 const handleNext = () => {
-  router.push({ name : 'LaunchPhoto'})
-}
+  router.push({ name: "LaunchPhoto" });
+};
 
 onMounted(() => {
   fetchLatestState();
@@ -210,7 +210,7 @@ onBeforeUnmount(() => {
               <br />
               QR code
             </h2>
-            <button @click="closeQrModal">X</button>
+            <button class="qr-close" @click="closeQrModal">x</button>
           </div>
           <div class="qr-wrapper">
             <div class="border-box-qr">
@@ -224,11 +224,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <!-- <p v-if="shareUrl" class="share-link">{{ shareUrl }}</p> -->
-          <button
-            type="button"
-            class="qr-close merah-semua"
-            @click="handleNext"
-          >
+          <button type="button" class="next merah-semua" @click="handleNext">
             Next
           </button>
         </div>
@@ -244,7 +240,6 @@ onBeforeUnmount(() => {
   width: 100vw;
   height: 100vh;
   padding: clamp(2rem, 4vw, 3rem);
-  /* background: radial-gradient(circle at center, rgba(0, 180, 255, 0.18), rgba(0, 0, 0, 0.92)); */
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -324,7 +319,7 @@ onBeforeUnmount(() => {
   letter-spacing: 0%;
   text-align: center;
   position: relative;
-  color: #e60000;
+  color: #13235e;
   margin: 0px;
   top: 80px;
 }
@@ -341,8 +336,8 @@ onBeforeUnmount(() => {
   width: 334px;
   height: 130px;
   background: #ffff;
-  color: #e60000;
-  border: 5px solid #e60000;
+  color: #13235e;
+  border: 5px solid #13235e;
 }
 
 .downloads-btn {
@@ -351,7 +346,7 @@ onBeforeUnmount(() => {
   width: 549px;
   height: 130px;
   border: none;
-  background: #e60000;
+  background: #13235e;
   color: #fff;
 }
 
@@ -398,7 +393,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
   font-family: "Poppins", sans-serif;
   font-style: normal;
-  color: #e60000;
+  color: #13235e;
 }
 
 .qr-wrapper {
@@ -438,7 +433,7 @@ onBeforeUnmount(() => {
   color: black;
 }
 
-.qr-close {
+.next {
   align-self: center;
   width: 115%;
   height: 130px;
@@ -447,7 +442,7 @@ onBeforeUnmount(() => {
   border: none;
   font-size: 60px;
   cursor: pointer;
-  background: #ff002b;
+  background: #13235e;
   color: #fff;
   transition: transform 120ms ease;
 }
@@ -456,5 +451,20 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: clamp(1.1rem, 2.4vw, 1.6rem);
   color: #ff97a8;
+}
+
+.qr-close {
+  position: relative;
+  left: 330px;
+  bottom: 250px;
+  background: #13235e;
+  font-size: 30px;
+  width: 40px;
+  height: 40px;
+  color: white;
+  border: 1px solid #13235e;
+  border-radius: 9999px;
+  line-height: 1;
+  padding-bottom: 0.2em;
 }
 </style>
