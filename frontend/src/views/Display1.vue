@@ -135,7 +135,7 @@ onBeforeUnmount(() => {
       <h1 class="led-number">Display {{ slotNumber }}</h1>
       <p v-if="status === 'loading'">Loading slot...</p>
       <p v-else-if="status === 'error'">{{ errorMessage }}</p>
-      <p v-if="status === 'waiting' && isFallback">
+      <p class="fallback" v-if="status === 'waiting' && isFallback">
         Waiting for photo, this is fallback.
       </p>
       <p v-else-if="!photoUrl">Waiting for photo...</p>
@@ -182,8 +182,10 @@ onBeforeUnmount(() => {
   font-size: 10em;
 }
 
-.version {
+.version, .fallback {
   position: absolute;
   color: white;
 }
+
+
 </style>

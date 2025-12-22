@@ -399,7 +399,6 @@ onBeforeUnmount(() => {
 .border-box-qr {
   border: 2px solid #000000;
   padding: 20px;
-  background-color: aqua;
 }
 
 .qr-image {
