@@ -35,7 +35,7 @@ const confirmStart = async () => {
     }
 
     isModalOpen.value = false;
-    router.push({ name: "photo-session" });
+    router.push({ name: "WaitingPhoto" });
   } catch (error) {
     console.error(error);
     modalError.value =
@@ -56,7 +56,7 @@ const onConfirmYes = async () => {
 </script>
 <template>
   <div class="page one">
-    <img src="../assets/start-btn.png" alt="start button" class="start-button" @click="openModal">Start Button</img>
+    <img src="../assets/start-btn.png" alt="start button" class="start-button" @click="openModal"/>
     <div v-if="isModalOpen" class="overlay">
       <div class="modal">
         <h2>Mulai Foto</h2>
@@ -81,7 +81,7 @@ const onConfirmYes = async () => {
 }
 
 .start-button{
-  cursor: pointer;
+  cursor: none;
   user-select: none;
   -webkit-user-drag: none;
 

@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
         :src="photoUrl"
         :alt="`Slot ${slotNumber} photo`"
       />
-      <p>Version: {{ version }}</p>
+      <p class="version">Version: {{ version }}</p>
     </div>
   </main>
 </template>
@@ -154,9 +154,7 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   margin: auto;
-
   aspect-ratio: 1 / 2;
-
   /* ini bikin frame selalu muat di monitor apa pun */
   width: min(100vw, calc(100vh / 2));
   height: auto;
@@ -170,7 +168,7 @@ onBeforeUnmount(() => {
   object-position: center;
 }
 
-.led-number{
+.led-number {
   position: absolute;
   color: white;
   left: 0;
@@ -182,5 +180,10 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   font-size: 10em;
+}
+
+.version {
+  position: absolute;
+  color: white;
 }
 </style>

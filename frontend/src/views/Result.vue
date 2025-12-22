@@ -236,37 +236,30 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+
 .result-screen {
-  width: 100vw;
   height: 100vh;
-  padding: clamp(2rem, 4vw, 3rem);
-  color: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(2rem, 5vw, 3rem);
   text-align: center;
-  transform: translate(0px, -30px);
+  background-image: url(../assets/bg-2.png);
 }
 
 .preview-card {
   max-width: 960px;
   width: 100%;
-  /* background: rgba(8, 12, 20, 0.9); */
   border-radius: 36px;
-  /* padding: clamp(1.5rem, 4vw, 3rem); */
-  /* box-shadow: 0 24px 48px rgba(0, 0, 0, 0.38); */
   display: flex;
   flex-direction: column;
-  /* gap: 1.5rem; */
   align-items: center;
+  padding-top: 8em;
 }
 
 .image-frame {
-  width: min(100%, 900px);
-  aspect-ratio: 3 / 4;
-  border-radius: 28px;
+  width: min(100%, 600px);
+  aspect-ratio: 1 / 2;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -312,22 +305,21 @@ onBeforeUnmount(() => {
 
 .cetak-caption {
   font-family: "Poppins", sans-serif;
-  font-weight: 700;
+  font-weight: 600;
   font-style: normal;
-  font-size: 72px;
+  font-size: 4.5em;
   line-height: 100%;
   letter-spacing: 0%;
   text-align: center;
   position: relative;
-  color: #13235e;
-  margin: 0px;
-  top: 80px;
+  color: #ffffff;
+  padding-top: 0.5em;
 }
 
 .actions {
   display: flex;
   gap: 40px;
-  transform: translate(0px, 90px);
+  padding-top: 3em;
 }
 
 .retake-btn {
@@ -348,6 +340,7 @@ onBeforeUnmount(() => {
   border: none;
   background: #13235e;
   color: #fff;
+  border: 2px solid white;
 }
 
 .home-btn {
@@ -365,7 +358,7 @@ onBeforeUnmount(() => {
 .qr-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.65); /*shadow */
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -388,8 +381,7 @@ onBeforeUnmount(() => {
 }
 
 .qr-modal h2 {
-  font-size: 84px;
-  margin: 0 0 0rem;
+  font-size: 5em;
   font-weight: 700;
   font-family: "Poppins", sans-serif;
   font-style: normal;
@@ -401,13 +393,13 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   background: none;
-  border-radius: 24px;
-  padding: 1.5rem;
+  padding-bottom: 2em;
 }
 
 .border-box-qr {
   border: 2px solid #000000;
   padding: 20px;
+  background-color: aqua;
 }
 
 .qr-image {
@@ -439,12 +431,22 @@ onBeforeUnmount(() => {
   height: 130px;
   padding: 0.75rem 2.5rem;
   border-radius: 999px;
-  border: none;
   font-size: 60px;
   cursor: pointer;
   background: #13235e;
   color: #fff;
-  transition: transform 120ms ease;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse{
+  0%, 100% { transform: scale(1);    filter: brightness(1); }
+  50%      { transform: scale(1.06); filter: brightness(1.08); }
+}
+
+.next:active{
+  animation: none;
+  transform: scale(0.95);
+  filter: brightness(0.92);
 }
 
 .error-banner {

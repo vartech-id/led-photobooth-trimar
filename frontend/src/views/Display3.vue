@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
         :src="photoUrl"
         :alt="`Slot ${slotNumber} photo`"
       />
-      <p>Version: {{ version }}</p>
+      <p class="version">Version: {{ version }}</p>
     </div>
   </main>
 </template>

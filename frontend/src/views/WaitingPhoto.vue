@@ -200,6 +200,7 @@ onBeforeUnmount(() => {
   color: #fff;
   text-align: center;
   padding: 2rem;
+  background-image: url(../assets/bg-1.png);
 }
 
 .status-panel {
@@ -274,13 +275,13 @@ h1 {
   min-width: 20rem;
   padding: 1rem 2.5rem;
   font-size: 40px;
-  /* font-weight: 600; */
   border: 5px solid #13235e;
   border-radius: 999px;
   cursor: pointer;
   transition: transform 150ms ease, box-shadow 150ms ease;
   background: white;
   transform: translate(0px, 20px);
+  cursor: none;
 }
 
 .action-btn:active {

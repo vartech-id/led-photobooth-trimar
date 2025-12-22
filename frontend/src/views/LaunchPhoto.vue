@@ -152,17 +152,20 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: rgb(255, 0, 0);
+  background-image: url(../assets/bg-2.png);
 }
 
 .image-result-wrapper {
-  background-color: aqua;
   display: flex;
   justify-content: center;
+  width: 100%;
+  padding-top: 1em;
+  
 }
 
 img {
-  width: 60%;
+  width: min(100%, 600px);
+  aspect-ratio: 1 / 2;
 }
 
 .launch-button-wrapper{
@@ -181,5 +184,6 @@ button{
   background: #13235e;
   color: #fff;
   transition: transform 120ms ease;
+  border: 2px solid white;
 }
 </style>
