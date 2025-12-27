@@ -183,7 +183,11 @@ button{
   cursor: pointer;
   background: #13235e;
   color: #fff;
-  transition: transform 120ms ease;
   border: 2px solid white;
+  transition: transform 1s ease
+}
+
+button:active{
+  transform: translateY(20px);
 }
 </style>

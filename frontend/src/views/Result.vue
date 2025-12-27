@@ -116,7 +116,7 @@ const retakeSession = async () => {
     }
     shareUrl.value = "";
     isQrModalOpen.value = false;
-    router.replace({ name: "photo-session" });
+    router.replace({ name: "WaitingPhoto" });
   } catch (error) {
     console.error(error);
     errorMessage.value =
@@ -341,6 +341,11 @@ onBeforeUnmount(() => {
   background: #13235e;
   color: #fff;
   border: 2px solid white;
+  transition: transform 1ms ease
+}
+
+.downloads-btn:active{
+  transform: translateY(10px);
 }
 
 .home-btn {
@@ -435,6 +440,7 @@ onBeforeUnmount(() => {
   background: #13235e;
   color: #fff;
   animation: pulse 1.4s ease-in-out infinite;
+  transition: transform 1ms ease;
 }
 
 @keyframes pulse{
@@ -446,6 +452,7 @@ onBeforeUnmount(() => {
   animation: none;
   transform: scale(0.95);
   filter: brightness(0.92);
+  transform: translateY(20px);
 }
 
 .error-banner {

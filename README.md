@@ -1,4 +1,5 @@
-khusus project ini harus run admin karena pakai script
+khusus project ini harus run admin karena pakai script:
+ipconfig ambil ipv4 adrress jika mau expose.
 
 jika belom di expose 
 expose dengan cara :
