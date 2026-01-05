@@ -5,6 +5,7 @@ from uuid import uuid4
 from urllib.parse import unquote
 import shutil
 
+from PIL import Image
 import subprocess
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
@@ -121,19 +122,27 @@ def _select_slot() -> int:
 
 def _copy_to_slot(source: Path, slot: int) -> dict:
     """
-    Copy file ke folder slot dengan rename atomik.
+    Copy file ke folder slot dengan kompresi JPG untuk mengurangi ukuran file.
     """
     slot_dir = DISPLAY_DIRS[slot]
-    suffix = source.suffix or ".jpg"
-    dest_name = f"foto-{slot}{suffix}"
+    
+    # Gunakan nama file .jpg
+    dest_name = f"foto-{slot}.jpg"
     dest_path = slot_dir / dest_name
-    tmp_path = slot_dir / f".tmp-{uuid4().hex}{suffix}"
+    tmp_path = slot_dir / f".tmp-{uuid4().hex}.jpg"
 
     try:
-        shutil.copy2(source, tmp_path)
+        # Buka source image, lalu save ulang sebagai JPEG dengan kompresi
+        with Image.open(source) as img:
+            # convert ke RGB untuk safe guard kalau source PNG/RGBA
+            if img.mode in ("RGBA", "P"): 
+                img = img.convert("RGB")
+                
+            img.save(tmp_path, format="JPEG", quality=50, optimize=True)
+
         tmp_path.replace(dest_path)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to copy photo: {exc}") from exc
+        raise HTTPException(status_code=500, detail=f"Failed to compress photo: {exc}") from exc
     finally:
         if tmp_path.exists():
             try:
