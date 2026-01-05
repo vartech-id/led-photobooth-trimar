@@ -1,23 +1,24 @@
 khusus project ini harus run admin karena pakai script:
 ipconfig ambil ipv4 adrress jika mau expose.
 
-jika belom di expose 
+jika belom di expose
 expose dengan cara :
-1. buat .env.development 
-2. masukan ip device dan port backend 
 
+1. buat .env.development
+2. masukan ip device dan port backend
 
-Frontend 
+ubah hook di dslrbooth dengan ip device dan port backend
+
+Frontend
 npm run dev -- --host 0.0.0.0 --port 5173
 
-BACKEND 
+BACKEND
 1.cd backend
 
-2.
-jika powershell :
-.\.venv\Scripts\activate
+2.  jika powershell :
+    .\.venv\Scripts\activate
 
-jika git 
+jika git
 source ./venv/Scripts/activate
 
 3.ketika sudah masuk venv
@@ -31,4 +32,3 @@ device 3 access /display3
 **Mode Kiosk Chrome**
 ctrl + run kemudian masukan ini :
 "C:\Program Files\Google\Chrome\Application\chrome.exe" --app=http://localhost:5173/ --kiosk --start-fullscreen --disable-infobars
-
